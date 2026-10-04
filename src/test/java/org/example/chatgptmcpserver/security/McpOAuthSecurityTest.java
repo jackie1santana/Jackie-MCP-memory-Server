@@ -14,6 +14,7 @@ class McpOAuthSecurityTest {
     @Test
     void publishesDiscoveryAndRejectsUnauthenticatedAndWrongResourceRequests() throws Exception {
         try (var context = new SpringApplicationBuilder(ChatGptMcpServerApplication.class)
+                .sources(TestTools.class)
                 .profiles("nodb")
                 .run("--server.port=0", "--spring.datasource.password=unused",
                         "--spring.autoconfigure.exclude=org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration",
@@ -73,6 +74,22 @@ class McpOAuthSecurityTest {
             String accessToken = json.get("access_token").asText();
             var introspector = context.getBean(org.springframework.security.oauth2.server.resource.introspection.OpaqueTokenIntrospector.class);
             assertThat(introspector.introspect(accessToken).getName()).isEqualTo("42");
+            var initialize = rpc(client, base, accessToken, null,
+                    "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"initialize\",\"params\":{\"protocolVersion\":\"2025-03-26\",\"capabilities\":{},\"clientInfo\":{\"name\":\"security-test\",\"version\":\"1\"}}}");
+            assertThat(initialize.statusCode()).as(initialize.body()).isEqualTo(200);
+            assertThat(initialize.body()).contains("protocolVersion", "tools");
+            String session = initialize.headers().firstValue("Mcp-Session-Id").orElseThrow();
+            var initialized = rpc(client, base, accessToken, session,
+                    "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}");
+            assertThat(initialized.statusCode()).isEqualTo(202);
+            var tools = rpc(client, base, accessToken, session,
+                    "{\"jsonrpc\":\"2.0\",\"id\":2,\"method\":\"tools/list\"}");
+            assertThat(tools.statusCode()).as(tools.body()).isEqualTo(200);
+            assertThat(tools.body()).contains("list_memory_categories", "remember_memory", "inputSchema");
+            var categories = rpc(client, base, accessToken, session,
+                    "{\"jsonrpc\":\"2.0\",\"id\":3,\"method\":\"tools/call\",\"params\":{\"name\":\"list_memory_categories\",\"arguments\":{}}}");
+            assertThat(categories.statusCode()).as(categories.body()).isEqualTo(200);
+            assertThat(categories.body()).contains("categories").doesNotContain("\"isError\":true");
             mock.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/oauth2/revoke").contentType("application/x-www-form-urlencoded")
                     .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic("chatgpt-test", "test-only-secret"))
                     .param("token", accessToken)).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.status().isOk());
@@ -85,5 +102,28 @@ class McpOAuthSecurityTest {
         var request = HttpRequest.newBuilder(URI.create(url)).GET();
         if (authorization != null) request.header("Authorization", authorization);
         return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    private HttpResponse<String> rpc(HttpClient client, String base, String token, String session, String json) throws Exception {
+        var request = HttpRequest.newBuilder(URI.create(base + "/mcp"))
+                .timeout(java.time.Duration.ofSeconds(10))
+                .header("Authorization", "Bearer " + token)
+                .header("Accept", "application/json, text/event-stream")
+                .header("Content-Type", "application/json")
+                .header("MCP-Protocol-Version", "2025-03-26")
+                .POST(HttpRequest.BodyPublishers.ofString(json));
+        if (session != null) request.header("Mcp-Session-Id", session);
+        return client.send(request.build(), HttpResponse.BodyHandlers.ofString());
+    }
+
+    @org.springframework.context.annotation.Configuration(proxyBeanMethods = false)
+    static class TestTools {
+        @org.springframework.context.annotation.Bean
+        org.springframework.ai.tool.ToolCallbackProvider testMemoryTools() {
+            var service = org.mockito.Mockito.mock(org.example.chatgptmcpserver.service.MemoryService.class);
+            org.mockito.Mockito.when(service.getCategories()).thenReturn(java.util.List.of("fidelity"));
+            return org.springframework.ai.tool.method.MethodToolCallbackProvider.builder()
+                    .toolObjects(new org.example.chatgptmcpserver.tool.MemoryMcpTools(service)).build();
+        }
     }
 }
