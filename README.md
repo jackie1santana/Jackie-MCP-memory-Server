@@ -5,7 +5,7 @@ Personal external-memory MCP server built with Java, Spring Boot, Spring AI MCP,
 ## What it provides
 
 - Durable memory storage in PostgreSQL using `NamedParameterJdbcTemplate`
-- Scoped retrieval (`personal`, `fidelity`, `custody`, `all`, `off`, etc.)
+- Scoped retrieval (`personal`, `family`, `custody`, `all`, `off`, etc.)
 - Optional `scopeContext` isolation so one chat can switch scope without affecting another
 - MCP tools for write/read/update/forget/scope/timeline operations
 - Soft delete (`active=false`) instead of hard delete
@@ -49,7 +49,7 @@ The five application tables are `memory`, `memory_category`, `memory_tag`,
 adds category choices without deleting or changing existing memories.
 
 Available memory areas/categories: `personal`, `family`, `custody`,
-`child_support`, `ashley`, `relationships`, `legal`, `work`, `fidelity`,
+`child_support`, `ashley`, `relationships`, `legal`, `work`,
 `software_engineering`, `education`, `home`, `travel`, `vehicles`, `finance`,
 `health`, `apple`, `creative`, and `general`. `all` and `off` are switch modes,
 not areas where memories can be saved. Use tags for additional people or topics.
