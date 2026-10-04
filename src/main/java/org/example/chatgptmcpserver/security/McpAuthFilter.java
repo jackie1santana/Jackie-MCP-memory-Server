@@ -59,6 +59,9 @@ public class McpAuthFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
+        if (environment.getProperty("app.mcp.oauth.enabled", Boolean.class, false)) {
+            return true;
+        }
         String path = request.getRequestURI();
         return !(path.startsWith("/mcp") || path.startsWith("/internal/status"));
     }
