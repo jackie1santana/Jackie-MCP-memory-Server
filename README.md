@@ -92,6 +92,25 @@ When connected as an MCP server, ChatGPT can call your tools to write and retrie
 
 For remote endpoints, enable MCP auth and provide a token header in your MCP connector configuration.
 
+## Optional DB admin MCP mode (dangerous)
+
+If you explicitly enable DB admin mode, ChatGPT can inspect database metadata and tables:
+
+- `db_list_databases`
+- `db_get_info`
+- `db_list_tables`
+- `db_describe_table`
+- `db_read_query`
+
+And if `MCP_DB_ADMIN_ALLOW_DDL=true`, ChatGPT can create tables using `db_create_table`.
+
+Defaults are secure:
+
+- `app.mcp.db-admin.enabled=false`
+- `app.mcp.db-admin.allow-ddl=false`
+
+Enable only when you trust the connector/session.
+
 ## Runtime checks
 
 - `GET /actuator/health`
@@ -137,6 +156,8 @@ Set environment variables in Railway:
 - `MCP_AUTH_ENABLED=true`
 - `MCP_AUTH_TOKEN=<long-random-secret>`
 - `MCP_AUTH_HEADER_NAME=X-MCP-API-KEY`
+- `MCP_DB_ADMIN_ENABLED=false` (set `true` only if you want DB-admin tools)
+- `MCP_DB_ADMIN_ALLOW_DDL=false` (set `true` only if you want ChatGPT to create tables)
 - database vars from Railway PostgreSQL (`DATABASE_URL` or `PG*`)
 
 Then configure your ChatGPT MCP connector to send the same `X-MCP-API-KEY` header.

@@ -10,6 +10,8 @@ Set these variables in Railway service settings:
 - `MCP_AUTH_ENABLED=true`
 - `MCP_AUTH_TOKEN=<long-random-secret>`
 - `MCP_AUTH_HEADER_NAME=X-MCP-API-KEY`
+- `MCP_DB_ADMIN_ENABLED=false` (set `true` to expose DB admin read tools)
+- `MCP_DB_ADMIN_ALLOW_DDL=false` (set `true` to allow ChatGPT table creation)
 
 Database values come from Railway PostgreSQL plugin automatically. This project reads:
 
@@ -38,9 +40,13 @@ In your MCP connector configuration, use:
 
 ChatGPT can then call tools for memory save/get/search/update/scope operations.
 
+If `MCP_DB_ADMIN_ENABLED=true`, ChatGPT can also inspect database metadata and table schemas.
+If `MCP_DB_ADMIN_ALLOW_DDL=true`, ChatGPT can run `CREATE TABLE` statements via MCP.
+
 ## 4) Security notes
 
 - Keep `MCP_AUTH_TOKEN` secret and rotate periodically.
+- Keep DB-admin MCP features disabled unless actively needed.
 - Do not log token values.
 - Keep PostgreSQL private to Railway networking; do not expose DB publicly.
 - If your threat model requires stronger controls, put MCP behind additional auth/proxy controls.
