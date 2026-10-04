@@ -133,7 +133,7 @@ public class McpOAuthConfiguration {
                 throw new BadOpaqueTokenException("Invalid or expired memory access token");
             }
             Map<String, Object> claims = authorization.getAccessToken().getClaims();
-            if (claims == null || !settings.getIssuer().equals(claims.get("iss"))
+            if (claims == null || !settings.getIssuer().equals(String.valueOf(claims.get("iss")))
                     || !List.of(settings.getIssuer() + "/mcp").equals(claims.get("aud"))) {
                 throw new BadOpaqueTokenException("Invalid memory token audience");
             }
