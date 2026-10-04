@@ -162,6 +162,11 @@ Set environment variables in Railway:
 
 Then configure your ChatGPT MCP connector to send the same `X-MCP-API-KEY` header.
 
+Example Railway MCP endpoint:
+
+- `https://jackie-mcp-memory-server-production.up.railway.app/mcp`
+- Password note: my password is in my iCloud Notes.
+
 Detailed guide: `docs/railway-mcp-setup.md`.
 
 Integration test uses Testcontainers and is skipped automatically when Docker is unavailable.
